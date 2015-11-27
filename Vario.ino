@@ -61,9 +61,6 @@ void setup() {
 	delay(100);
 }
 
-int beepStuff = 0;
-long loops = 0;
-
 void loop() {
 	// Put a new pressure reading in the filter:
 	double prs = getPressure();

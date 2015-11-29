@@ -1,11 +1,11 @@
 #include <SFE_BMP180.h>
 #include <Filters.h>
 
-const boolean useLogger = true;
+const boolean useLogger = false;
 const char BEEPER_PORT = 3;
 const double filterFrequency = 0.4;
-const char SAMPLE_RATE = 8;
-const char BEEP_INTERVAL = 4;
+const char SAMPLE_RATE = 5;
+const char BEEP_INTERVAL = 5;
 
 FilterOnePole presureFilter(LOWPASS, filterFrequency);
 SFE_BMP180 pressure;
@@ -79,41 +79,24 @@ void loop() {
 
 double getPressure() {
 	double pRet;
-	char status = refreshTemperature();
-	if (status != 0) {
-		// Start a pressure measurement:
-		// The parameter is the oversampling setting, from 0 to 3 (highest res, longest wait).
-		// If request is successful, the number of ms to wait is returned.
-		// If request is unsuccessful, 0 is returned.
-		status = pressure.startPressure(3);
+	if (refreshTemperature()) {
+		int status = pressure.startPressure(3);
 		if (status != 0) {
-			// Wait for the measurement to complete:
 			delay(status);
-			// Retrieve the completed pressure measurement:
-			// Note that the measurement is stored in the variable P.
-			// Note also that the function requires the previous temperature measurement (T).
-			// !!!! (If temperature is stable, you can do one temperature measurement for a number of pressure measurements.)
-			// Function returns 1 if successful, 0 if failure.
-
 			status = pressure.getPressure(pRet, temperature);
 			if (status != 0) {
 				return pRet;
 			}
 		}
 	}
-	return 0;
+	return referrence;
 }
 
 char refreshTemperature() {
 	if (noSamples == SAMPLE_RATE) {
 		char status = pressure.startTemperature();
 		if (status != 0) {
-			// Wait for the measurement to complete:
 			delay(status);
-			// Retrieve the completed temperature measurement:
-			// Note that the measurement is stored in the variable T.
-			// Use '&T' to provide the address of T to the function.
-			// Function returns 1 if successful, 0 if failure.
 			return pressure.getTemperature(temperature);
 		}
 	}
@@ -131,15 +114,18 @@ void beep(double vSpeed) {
 		if (iterationSoundStart > BEEP_INTERVAL) {
 			stopBeep();
 			iterationSoundStart = -BEEP_INTERVAL;
-
+			if (useLogger)
+					Serial.println("pause beep");
 		}
+
 		if (vSpeed > 0.1 && iterationSoundStart > 0) {
-			//digitalWrite(13, HIGH);  // turn the LED on (HIGH is the voltage level)
+			digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
+			//return;
 			unsigned int climbFreq = round(vSpeed * 300) + 350;
-			tone(BEEPER_PORT, climbFreq, round(vSpeed * 2000));
+			tone(BEEPER_PORT, climbFreq, BEEP_INTERVAL * 100);
 		} else if (vSpeed < -0.6 && iterationSoundStart > 0) {
 			unsigned int descFreq = 150 - round(-vSpeed * 100);
-			tone(BEEPER_PORT, descFreq, round(-vSpeed * 2000));
+			tone(BEEPER_PORT, descFreq, BEEP_INTERVAL * 100);
 		} else {
 			stopBeep();
 		}
@@ -149,7 +135,7 @@ void beep(double vSpeed) {
 }
 
 void stopBeep() {
-	//digitalWrite(13, LOW);   // turn the LED off
+	digitalWrite(13, LOW);   // turn the LED off
 	iterationSoundStart = 0;
 	noTone(BEEPER_PORT);
 }

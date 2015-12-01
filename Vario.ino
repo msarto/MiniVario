@@ -3,12 +3,12 @@
 
 const boolean useLogger = true;
 const char BEEPER_PORT = 3;
-const double filterFrequency = 50.0;
-const char SAMPLE_RATE = 4;
+const double filterSensitivity = 0.08;
+const char SAMPLE_RATE = 5;
 const char BEEP_INTERVAL = 5;
 
 SFE_BMP180 pressure;
-Kalman kalman; // Create the Kalman instances
+Kalman filter;
 
 double referrence; // the reference altitude pressure
 double temperature;
@@ -38,7 +38,7 @@ void setup() {
 
 	// Get the baseline pressure:
 	referrence = getPressure();
-	kalman.setSensitivity(filterFrequency);
+	filter.setSensitivity(filterSensitivity, referrence);
 	if (useLogger)
 		Serial.print("baseline pressure: ");
 	if (useLogger)
@@ -64,11 +64,10 @@ void setup() {
 void loop() {
 	// Put a new pressure reading in the filter:
 	double prs = getPressure();
-	//presureFilter.input(prs);
-	double currentPresure = kalman.filter(prs);
+	double currentPresure = filter.filter(prs);
 	if (noSamples == SAMPLE_RATE) {
 		//double currentPresure = presureFilter.output();
-		double relativeAltitude = pressure.altitude(currentPresure, referrence); // The relative altitude from the referrence point (not from the GND)
+		double relativeAltitude = pressure.altitude(currentPresure, referrence); // The relative altitude from the reference point (not from the GND)
 		//Serial.print("relative altitude: ");
 		//Serial.println(relativeAltitude /*altSum / noSamples*/, 2);
 		referrence = currentPresure;
@@ -140,3 +139,4 @@ void stopBeep() {
 	iterationSoundStart = 0;
 	noTone(BEEPER_PORT);
 }
+

@@ -1,28 +1,25 @@
 #include <SFE_BMP180.h>
 #include "Kalman.h"
 
-const boolean useLogger = true;
+const boolean useLogger = false;
 const char BEEPER_PORT = 3;
-const double filterSensitivity = 0.08;
 const char SAMPLE_RATE = 5;
-const char BEEP_INTERVAL = 5;
+const char BEEP_INTERVAL = 10;
 
 SFE_BMP180 pressure;
 Kalman filter;
 
 double referrence; // the reference altitude pressure
 double temperature;
-float noSamples = SAMPLE_RATE;
-float pSum = 0;
+char noSamples = SAMPLE_RATE;
 
 void setup() {
-	pinMode(BEEPER_PORT, OUTPUT);
-	pinMode(13, OUTPUT);
-	if (useLogger)
+	if (useLogger) {
+		pinMode(BEEPER_PORT, OUTPUT);
+		//pinMode(13, OUTPUT);
 		Serial.begin(9600);
-	if (useLogger)
 		Serial.println("REBOOT");
-
+	}
 	// Initialize the sensor (it is important to get calibration values stored on the device).
 	if (pressure.begin()) {
 		if (useLogger)
@@ -38,14 +35,12 @@ void setup() {
 
 	// Get the baseline pressure:
 	referrence = getPressure();
-	filter.setSensitivity(filterSensitivity, referrence);
-	if (useLogger)
+	//filter.setSensitivity(filterSensitivity, referrence);
+	if (useLogger) {
 		Serial.print("baseline pressure: ");
-	if (useLogger)
-		Serial.print(referrence);
-	if (useLogger)
+		Serial.print(referrence, 3);
 		Serial.println(" mb");
-
+	}
 	// make a sound to know setup was fine initialize
 	beep(1);
 	delay(50);
@@ -66,10 +61,8 @@ void loop() {
 	double prs = getPressure();
 	double currentPresure = filter.filter(prs);
 	if (noSamples == SAMPLE_RATE) {
-		//double currentPresure = presureFilter.output();
-		double relativeAltitude = pressure.altitude(currentPresure, referrence); // The relative altitude from the reference point (not from the GND)
-		//Serial.print("relative altitude: ");
-		//Serial.println(relativeAltitude /*altSum / noSamples*/, 2);
+		// The relative altitude from the reference point (not from the GND)
+		double relativeAltitude = pressure.altitude(currentPresure, referrence);
 		referrence = currentPresure;
 		noSamples = 0;
 		beep(relativeAltitude);
@@ -105,11 +98,10 @@ char refreshTemperature() {
 
 int iterationSoundStart = 0;
 void beep(double vSpeed) {
-	if (useLogger)
+	if (useLogger) {
 		Serial.print("Tone: ");
-	if (useLogger)
-		Serial.println(vSpeed /*altSum / noSamples*/, 2);
-
+		Serial.println(vSpeed, 2);
+	}
 	if (abs(vSpeed) < 5) {
 		if (iterationSoundStart > BEEP_INTERVAL) {
 			stopBeep();
@@ -118,24 +110,22 @@ void beep(double vSpeed) {
 				Serial.println("pause beep");
 		}
 
-		if (vSpeed > 0.1 && iterationSoundStart > 0) {
-			digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
-			//return;
+		if (vSpeed > 0.1 && iterationSoundStart >= 0) {
+			//digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
 			unsigned int climbFreq = round(vSpeed * 300) + 350;
 			tone(BEEPER_PORT, climbFreq, BEEP_INTERVAL * 100);
-		} else if (vSpeed < -0.6 && iterationSoundStart > 0) {
+		} else if (vSpeed < -0.6 && iterationSoundStart >= 0) {
 			unsigned int descFreq = 150 - round(-vSpeed * 100);
 			tone(BEEPER_PORT, descFreq, BEEP_INTERVAL * 100);
 		} else {
 			stopBeep();
 		}
-
 		iterationSoundStart++;
 	}
 }
 
 void stopBeep() {
-	digitalWrite(13, LOW);   // turn the LED off
+	//digitalWrite(13, LOW);   // turn the LED off
 	iterationSoundStart = 0;
 	noTone(BEEPER_PORT);
 }

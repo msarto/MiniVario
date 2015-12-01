@@ -1,12 +1,12 @@
 #include "Kalman.h"
 
-double sensitivity = 25.0;
+double sensitivity = 2.0f;
 
-float Q = sensitivity * 0.000004f;
-float R = sensitivity * 0.0006f;
-float P = sensitivity / (2.0f * 1000.0f);
-float X = 0.0f; // one dimensional
-float K = 0.0f;
+double Q = sensitivity * 0.000004f;
+double R = sensitivity * 0.0006f;
+double P = sensitivity / (2.0f * 1000.0f);
+double X = 0.0f; // one dimensional
+double K = 0.0f;
 
 double Kalman::filter(double raw) {
 	if (X == 0) {
@@ -18,12 +18,11 @@ double Kalman::filter(double raw) {
 	return X;
 }
 
-void Kalman::setSensitivity(double s) {
+void Kalman::setSensitivity(double s, double initialValue) {
 	sensitivity = s;
-	Q = sensitivity * 0.000004f;
-	R = sensitivity * 0.0006f;
-	P = sensitivity / (2.0f * 1000.0f);
-	X = 0.0f; // one dimensional
-	K = 0.0f;
+	Q = sensitivity * 0.000004;
+	R = sensitivity * 0.0006;
+	P = sensitivity / (1000.0);
+	X = initialValue; // one dimensional
+	K = 0.0;
 }
-

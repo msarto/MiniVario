@@ -3,7 +3,7 @@
 
 struct Kalman {
 	double filter(double raw);
-	void setSensitivity(double s);
+	void setSensitivity(double s, double initialValue);
 };
 
 #endif

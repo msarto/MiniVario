@@ -1,10 +1,13 @@
 #include <SFE_BMP180.h>
 #include "Kalman.h"
 
-const boolean useLogger = false;
+const boolean useLogger = true;
 const char BEEPER_PORT = 3;
 const char SAMPLE_RATE = 5;
-const char BEEP_INTERVAL = 10;
+const char BEEP_INTERVAL = 7;
+const int DESC_START_FREQ = 250;
+const int CLIMB_START_FREQ = 370;
+const int FREQ_STEP = 200;
 
 SFE_BMP180 pressure;
 Kalman filter;
@@ -60,6 +63,7 @@ void loop() {
 	// Put a new pressure reading in the filter:
 	double prs = getPressure();
 	double currentPresure = filter.filter(prs);
+	int var = 20;
 	if (noSamples == SAMPLE_RATE) {
 		// The relative altitude from the reference point (not from the GND)
 		double relativeAltitude = pressure.altitude(currentPresure, referrence);
@@ -112,10 +116,10 @@ void beep(double vSpeed) {
 
 		if (vSpeed > 0.1 && iterationSoundStart >= 0) {
 			//digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
-			unsigned int climbFreq = round(vSpeed * 300) + 350;
+			unsigned int climbFreq = round(vSpeed * FREQ_STEP) + CLIMB_START_FREQ;//350;
 			tone(BEEPER_PORT, climbFreq, BEEP_INTERVAL * 100);
 		} else if (vSpeed < -0.6 && iterationSoundStart >= 0) {
-			unsigned int descFreq = 150 - round(-vSpeed * 100);
+			unsigned int descFreq = DESC_START_FREQ - round(-vSpeed * FREQ_STEP);
 			tone(BEEPER_PORT, descFreq, BEEP_INTERVAL * 100);
 		} else {
 			stopBeep();

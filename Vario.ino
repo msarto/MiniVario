@@ -10,7 +10,7 @@ const int CLIMB_START_FREQ = 370;
 const int FREQ_STEP = 200;
 
 SFE_BMP180 pressure;
-const float filterSensitivity = 0.3f;
+const float filterSensitivity = 0.4f;
 FilterOnePole filter(LOWPASS, filterSensitivity);
 
 double referrence; // the reference altitude pressure

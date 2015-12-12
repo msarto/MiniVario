@@ -1,7 +1,7 @@
 #include <SFE_BMP180.h>
-#include "Kalman.h"
+#include <Filters.h>
 
-const boolean useLogger = true;
+const boolean useLogger = false;
 const char BEEPER_PORT = 3;
 const char SAMPLE_RATE = 5;
 const char BEEP_INTERVAL = 7;
@@ -10,7 +10,8 @@ const int CLIMB_START_FREQ = 370;
 const int FREQ_STEP = 200;
 
 SFE_BMP180 pressure;
-Kalman filter;
+const float filterSensitivity = 0.3f;
+FilterOnePole filter(LOWPASS, filterSensitivity);
 
 double referrence; // the reference altitude pressure
 double temperature;
@@ -38,7 +39,7 @@ void setup() {
 
 	// Get the baseline pressure:
 	referrence = getPressure();
-	//filter.setSensitivity(filterSensitivity, referrence);
+	filter.setFilter(LOWPASS, filterSensitivity, referrence);
 	if (useLogger) {
 		Serial.print("baseline pressure: ");
 		Serial.print(referrence, 3);
@@ -62,9 +63,14 @@ void setup() {
 void loop() {
 	// Put a new pressure reading in the filter:
 	double prs = getPressure();
-	double currentPresure = filter.filter(prs);
-	int var = 20;
+	filter.input(prs);
 	if (noSamples == SAMPLE_RATE) {
+		double currentPresure = filter.output();
+		if (useLogger) {
+			Serial.print("current pressure: ");
+			Serial.print(currentPresure);
+			Serial.println(" mb");
+		}
 		// The relative altitude from the reference point (not from the GND)
 		double relativeAltitude = pressure.altitude(currentPresure, referrence);
 		referrence = currentPresure;
@@ -116,7 +122,7 @@ void beep(double vSpeed) {
 
 		if (vSpeed > 0.1 && iterationSoundStart >= 0) {
 			//digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
-			unsigned int climbFreq = round(vSpeed * FREQ_STEP) + CLIMB_START_FREQ;//350;
+			unsigned int climbFreq = round(vSpeed * FREQ_STEP) + CLIMB_START_FREQ; //350;
 			tone(BEEPER_PORT, climbFreq, BEEP_INTERVAL * 100);
 		} else if (vSpeed < -0.6 && iterationSoundStart >= 0) {
 			unsigned int descFreq = DESC_START_FREQ - round(-vSpeed * FREQ_STEP);
@@ -133,4 +139,3 @@ void stopBeep() {
 	iterationSoundStart = 0;
 	noTone(BEEPER_PORT);
 }
-

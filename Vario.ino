@@ -1,16 +1,16 @@
 #include <SFE_BMP180.h>
 #include <Filters.h>
 
-const boolean useLogger = false;
-const char BEEPER_PORT = 3;
-const char SAMPLE_RATE = 5;
-const char BEEP_INTERVAL = 7;
+const boolean useLogger = true;
+const char BEEPER_PORT = 4;
+const char SAMPLE_RATE = 8;
+const char BEEP_INTERVAL = 5;
 const int DESC_START_FREQ = 250;
-const int CLIMB_START_FREQ = 370;
+const int CLIMB_START_FREQ = 270;
 const int FREQ_STEP = 200;
 
 SFE_BMP180 pressure;
-const float filterSensitivity = 0.4f;
+const float filterSensitivity = 0.2f;
 FilterOnePole filter(LOWPASS, filterSensitivity);
 
 double referrence; // the reference altitude pressure
@@ -24,6 +24,9 @@ void setup() {
 		Serial.begin(9600);
 		Serial.println("REBOOT");
 	}
+	initSettings();
+	setupLCD();
+	writeLCD(0);
 	// Initialize the sensor (it is important to get calibration values stored on the device).
 	if (pressure.begin()) {
 		if (useLogger)
@@ -76,6 +79,7 @@ void loop() {
 		referrence = currentPresure;
 		noSamples = 0;
 		beep(relativeAltitude);
+		updateSettings();
 	}
 	noSamples++;
 }
@@ -118,6 +122,11 @@ void beep(double vSpeed) {
 			iterationSoundStart = -BEEP_INTERVAL;
 			if (useLogger)
 				Serial.println("pause beep");
+		}
+		if (abs(vSpeed) > 0.1) {
+			writeLCD(vSpeed);
+		} else {
+			writeLCD(0);
 		}
 
 		if (vSpeed > 0.1 && iterationSoundStart >= 0) {

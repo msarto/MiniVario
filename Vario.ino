@@ -3,16 +3,17 @@
 #include "Kalman.h"
 
 const boolean useLogger = false;
-const char BEEPER_PORT = 5;
-const char SAMPLE_RATE = 8;
+const char BEEPER_PORT = 4;
+const char SAMPLE_RATE = 10;
 const char BEEP_INTERVAL = 3;
 const int DESC_START_FREQ = 200;
-const int CLIMB_START_FREQ = 350;
+const int CLIMB_START_FREQ = 300;
 const int FREQ_STEP = 200;
 
 SFE_BMP180 pressure;
 const float filterSensitivity = 0.2f;
 FilterOnePole filter(LOWPASS, filterSensitivity);
+double altitudeFilter = 0.8;
 FilterOnePole filterAltitude(LOWPASS, 0.8, 0);
 
 double referrence; // the reference altitude pressure
@@ -20,8 +21,8 @@ double temperature;
 char noSamples = SAMPLE_RATE;
 
 void setup() {
+	pinMode(BEEPER_PORT, OUTPUT);
 	if (useLogger) {
-		pinMode(BEEPER_PORT, OUTPUT);
 		//pinMode(13, OUTPUT);
 		Serial.begin(9600);
 		Serial.println("REBOOT");
@@ -86,8 +87,8 @@ void loop() {
 		relativeAltitude = filterAltitude.input(relativeAltitude);
 		referrence = currentPresure;
 		noSamples = 0;
+		updateSettings(relativeAltitude);
 		beep(relativeAltitude);
-		updateSettings();
 	}
 	noSamples++;
 }
@@ -142,9 +143,11 @@ void beep(double vSpeed) {
 		if (vSpeed > 0.1 && iterationSoundStart >= 0) {
 			//digitalWrite(13, HIGH); // turn the LED on (HIGH is the voltage level)
 			unsigned int climbFreq = round(vSpeed * FREQ_STEP) + CLIMB_START_FREQ; //350;
+			noTone(BEEPER_PORT);
 			tone(BEEPER_PORT, climbFreq, BEEP_INTERVAL * 100);
 		} else if (vSpeed < -0.6 && iterationSoundStart >= 0) {
 			unsigned int descFreq = DESC_START_FREQ - round(-vSpeed * FREQ_STEP);
+			noTone(BEEPER_PORT);
 			tone(BEEPER_PORT, descFreq, BEEP_INTERVAL * 100);
 		} else {
 			stopBeep();
